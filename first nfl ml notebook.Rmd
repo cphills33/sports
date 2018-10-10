@@ -1,0 +1,236 @@
+---
+title: "R NFL Scraper Notebook"
+output: 
+  html_notebook:
+    theme: paper
+    toc: yes
+    toc_float: yes
+---
+
+# Load packages {.tabset}
+
+## tidyverse
+```{r}
+if (!require(tidyverse)){
+  install.packages("tidyverse", dependencies = TRUE)
+  library(tidyverse)
+}
+```
+
+## devtools
+
+```{r}
+if (!require(devtools)){
+  install.packages("devtools", dependencies = TRUE)
+  library(devtools)
+}
+```
+
+## nflScrapr
+
+```{r}
+if (!require(nflscrapR)){
+  devtools::install_github(repo = "maksimhorowitz/nflscrapR")
+  library(nflscrapR)
+}
+```
+
+## caret
+
+```{r}
+if (!require(caret)){
+  install.packages("caret", dependencies = TRUE)
+  library(caret)
+}
+```
+
+# Load Data
+```{r}
+games2009 <- season_games(Season = 2009)
+games2010 <- season_games(Season = 2010)
+games2011 <- season_games(Season = 2011)
+games2012 <- season_games(Season = 2012)
+games2013 <- season_games(Season = 2013)
+games2014 <- season_games(Season = 2014)
+games2015 <- season_games(Season = 2015)
+games2016 <- season_games(Season = 2016)
+games2017 <- season_games(Season = 2017)
+gamesdf <- bind_rows(games2009, 
+                     games2010, 
+                     games2011, 
+                     games2012, 
+                     games2013, 
+                     games2014, 
+                     games2015, 
+                     games2016,
+                     games2017)
+
+playerstats.2009 <- season_player_game(2009)
+playerstats.2010 <- season_player_game(2010)
+playerstats.2011 <- season_player_game(2011)
+playerstats.2012 <- season_player_game(2012)
+playerstats.2013 <- season_player_game(2013)
+playerstats.2014 <- season_player_game(2014)
+playerstats.2015 <- season_player_game(2015)
+playerstats.2016 <- season_player_game(2016)
+playerstats.2017 <- season_player_game(2017)
+psdf <- bind_rows(playerstats.2009, 
+                  playerstats.2010, 
+                  playerstats.2011, 
+                  playerstats.2012, 
+                  playerstats.2013, 
+                  playerstats.2014,
+                  playerstats.2015, 
+                  playerstats.2016,
+                  playerstats.2017)
+```
+```{r}
+games2018 <- season_games(Season = 2018)
+playerstats.2018 <- season_player_game(2018)
+```
+
+
+```{r}
+(playerstats.2018 %>%
+  select(Team, passyds, rushyds, sacks, totalfumbs, defints, fumbslost) %>%
+  group_by(Team) %>%
+  summarize(hpassyds = sum(passyds),
+            hrushyds = sum(rushyds),
+            hsacks = sum(sacks),
+            htotalfumbs = sum(fumbslost),
+            hint = sum(defints)) %>%
+  mutate(hpassFactor = (hpassyds - mean(hpassyds))/sd(hpassyds),
+         hrushydsFactor = (hrushyds-mean(hrushyds))/sd(hrushyds),
+         hsacksFactor = (hsacks-mean(hsacks))/sd(hsacks),
+         htotalfumbsFactor = (htotalfumbs-mean(htotalfumbs))/sd(htotalfumbs),
+         hintfactor = (hint-mean(hint))/sd(hint)) %>%
+   mutate(home = Team) %>%
+  filter(!is.na(Team))-> hfactorstats)
+
+(playerstats.2018 %>%
+  select(Team, passyds, rushyds, sacks, totalfumbs, defints, fumbslost) %>%
+  group_by(Team) %>%
+  summarize(vpassyds = sum(passyds),
+            vrushyds = sum(rushyds),
+            vsacks = sum(sacks),
+            vtotalfumbs = sum(fumbslost),
+            vint = sum(defints)) %>%
+  mutate(vpassFactor = (vpassyds-mean(vpassyds))/sd(vpassyds),
+         vrushydsFactor = (vrushyds-mean(vrushyds))/sd(vrushyds),
+         vsacksFactor = (vsacks-mean(vsacks))/sd(vsacks),
+         vtotalfumbsFactor = (vtotalfumbs-mean(vtotalfumbs))/sd(vtotalfumbs),
+         vintfactor = (vint-mean(vint))/sd(vint)) %>%
+   mutate(away = Team) %>%
+  filter(!is.na(Team))-> vfactorstats)
+```
+```{r}
+games2018 %>%
+  mutate(winner = case_when(homescore >= awayscore ~ "home",
+                            homescore < awayscore ~ "away")) %>%
+  left_join(hfactorstats) %>%
+  left_join(vfactorstats, by = "away") %>%
+  select (winner, hpassFactor, hrushydsFactor, hsacksFactor, htotalfumbsFactor, hintfactor, vpassFactor, vrushydsFactor, vsacksFactor, vtotalfumbsFactor, vintfactor) %>%
+      mutate(passdiff = hpassFactor-vpassFactor,
+           rushdiff = hrushydsFactor-vrushydsFactor,
+           sackdiff = hsacksFactor - vsacksFactor,
+           fumblediff = htotalfumbsFactor - vtotalfumbsFactor,
+           intdiff = hintfactor - vintfactor) %>% 
+  select(winner, passdiff, rushdiff, sackdiff, fumblediff, intdiff) -> dataset
+```
+
+```{r}
+games2018 %>%
+  mutate(winner = case_when(homescore >= awayscore ~ "home",
+                            homescore < awayscore ~ "away")) %>%
+  left_join(hfactorstats) %>%
+  left_join(vfactorstats, by = "away") %>%
+  select (winner, hpassFactor, hrushydsFactor, hsacksFactor, htotalfumbsFactor, hintfactor, vpassFactor, vrushydsFactor, vsacksFactor, vtotalfumbsFactor, vintfactor) -> dataset
+```
+
+# Create validiation dataset
+
+```{r}
+# create a list of 80% of the rows in the original dataset we can use for training
+validation_index <- createDataPartition(dataset$winner, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validation <- dataset[-validation_index,]
+# use the remaining 80% of data to training and testing the models
+dataset <- dataset[validation_index,]
+```
+
+# Test Harness
+
+```{r}
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+```
+
+# Build 5 models
+```{r}
+# a) linear algorithms
+set.seed(7)
+fit.lda <- train(winner~., data=dataset, method="lda", metric=metric, trControl=control)
+# b) nonlinear algorithms
+# CART
+set.seed(7)
+fit.cart <- train(winner~., data=dataset, method="rpart", metric=metric, trControl=control)
+# kNN
+set.seed(7)
+fit.knn <- train(winner~., data=dataset, method="knn", metric=metric, trControl=control)
+# c) advanced algorithms
+# SVM
+set.seed(7)
+fit.svm <- train(winner~., data=dataset, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+set.seed(7)
+fit.rf <- train(winner~., data=dataset, method="rf", metric=metric, trControl=control)
+```
+
+
+# Select best model
+```{r}
+# summarize accuracy of models
+results <- resamples(list(lda=fit.lda, cart=fit.cart, knn=fit.knn, svm=fit.svm, rf=fit.rf))
+summary(results)
+```
+
+# Test predictions
+```{r}
+# estimate skill of LDA on the validation dataset
+predictions <- predict(fit.svm, validation)
+confusionMatrix(predictions, as_factor(validation$winner))
+```
+
+# Make new predictions
+```{r}
+tibble::tribble(
+       ~venue,    ~g1,    ~g2,    ~g3,    ~g4,    ~g5,    ~g6,    ~g7,    ~g8,    ~g9,   ~g10,   ~g11,   ~g12,   ~g13,  ~g14,  ~g15,
+  "road team", "PHI",  "TB", "PIT", "LAC", "SEA", "CHI",  "AZ", "IND", "CAR", "BUF", "LAR", "JAX", "BAL", "KC", "SF",
+  "home team", "NYG", "ATL", "CIN", "CLE", "OAK", "MIA", "MIN", "NYJ", "WAS", "HOU", "DEN", "DAL", "TEN", "NE", "GB"
+  ) %>% 
+  gather(venue) %>%
+  mutate(home_away = row_number()%%2) %>%
+  mutate(home_away = case_when(home_away==1 ~ "away",
+                               home_away==0 ~ "home")) %>%
+  spread(home_away, value) %>%
+  left_join(hfactorstats) %>%
+  left_join(vfactorstats, by = "away") %>%
+      mutate(passdiff = hpassFactor-vpassFactor,
+           rushdiff = hrushydsFactor-vrushydsFactor,
+           sackdiff = hsacksFactor - vsacksFactor,
+           fumblediff = htotalfumbsFactor - vtotalfumbsFactor,
+           intdiff = hintfactor - vintfactor) -> currentWeek
+```
+
+```{r}
+predictions <- predict(fit.rf, currentWeek)
+```
+
+
+
+
+
+
+
+
