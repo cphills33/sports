@@ -44,7 +44,9 @@ if (!require(caret)){
 }
 ```
 
-# Load Data
+# Load Data {.tabset}
+
+## download data from NFL
 ```{r}
 games2009 <- season_games(Season = 2009)
 games2010 <- season_games(Season = 2010)
@@ -123,6 +125,8 @@ playerstats.2018 <- season_player_game(2018)
    mutate(away = Team) %>%
   filter(!is.na(Team))-> vfactorstats)
 ```
+
+## combine 2018 datasets with diff scores
 ```{r}
 games2018 %>%
   mutate(winner = case_when(homescore >= awayscore ~ "home",
@@ -137,9 +141,18 @@ games2018 %>%
            intdiff = hintfactor - vintfactor) %>% 
   select(winner, passdiff, rushdiff, sackdiff, fumblediff, intdiff) -> dataset
 ```
-
+## combine 2018 datasets no diff scores
 ```{r}
 games2018 %>%
+  mutate(winner = case_when(homescore >= awayscore ~ "home",
+                            homescore < awayscore ~ "away")) %>%
+  left_join(hfactorstats) %>%
+  left_join(vfactorstats, by = "away") %>%
+  select (winner, hpassFactor, hrushydsFactor, hsacksFactor, htotalfumbsFactor, hintfactor, vpassFactor, vrushydsFactor, vsacksFactor, vtotalfumbsFactor, vintfactor) -> dataset
+```
+## combine all datasets no diff scores
+```{r}
+gamesdf %>%
   mutate(winner = case_when(homescore >= awayscore ~ "home",
                             homescore < awayscore ~ "away")) %>%
   left_join(hfactorstats) %>%
@@ -198,7 +211,7 @@ summary(results)
 # Test predictions
 ```{r}
 # estimate skill of LDA on the validation dataset
-predictions <- predict(fit.svm, validation)
+predictions <- predict(fit.cart, validation)
 confusionMatrix(predictions, as_factor(validation$winner))
 ```
 
@@ -224,7 +237,10 @@ tibble::tribble(
 ```
 
 ```{r}
-predictions <- predict(fit.rf, currentWeek)
+currentWeek %>%
+  filter(venue == "g15")->currentWeek1
+
+predict(fit.cart, currentWeek1)
 ```
 
 
