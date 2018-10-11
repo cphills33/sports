@@ -98,9 +98,14 @@ psdf <- bind_rows(playerstats.2009,
 games2018 <- season_games(Season = 2018)
 playerstats.2018 <- season_player_game(2018)
 ```
+```{r}
+psdf1718 <- bind_rows(playerstats.2017, playerstats.2018)
+gamesdf1718 <- bind_rows(games2017, games2018)
+```
+
 # Tidy data {.tabset}
 
-## home team and opponent stats
+## home team and opponent stats for 2018
 ```{r}
 (playerstats.2018 %>%
   select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
@@ -135,7 +140,7 @@ playerstats.2018 <- season_player_game(2018)
   mutate(home = Team) %>%
   filter(!is.na(Team)) -> hfactorstats)
 ```
-## visitor team and opponent stats
+## visitor team and opponent stats for 2018
 ```{r}
 (playerstats.2018 %>%
   select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
@@ -170,8 +175,147 @@ playerstats.2018 <- season_player_game(2018)
   mutate(away = Team) %>%
   filter(!is.na(Team)) -> vfactorstats)
 ```
-
-## combine data
+## home team and opponent stats for 2009-2017
+```{r}
+(psdf %>%
+  select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
+  group_by(game.id, Team) %>%
+  summarize(passyds = sum(passyds),
+            rushyds = sum(rushyds),
+            sacks = sum(sacks),
+            defints = sum(defints),
+            fumbslost = sum(fumbslost)) %>%
+  arrange(game.id) %>%
+  mutate(opassyds = case_when(row_number() %% 2 == 1 ~ passyds[2],
+                               row_number() %% 2 == 0 ~ passyds[1]),
+         orushyds = case_when(row_number() %% 2 == 1 ~ rushyds[2],
+                              row_number() %% 2 == 0 ~ rushyds[1]),
+         osacks = case_when(row_number() %% 2 == 1 ~ sacks[2],
+                            row_number() %% 2 == 0 ~ sacks[1]),
+         odefints = case_when(row_number() %% 2 == 1 ~ defints[2],
+                              row_number() %% 2 == 0 ~ defints[1]),
+         ofumbslost = case_when(row_number() %% 2 == 1 ~ fumbslost[2],
+                                row_number() %% 2 == 0 ~ fumbslost[1])) %>%
+  group_by(Team) %>%
+  summarize(hpassyds = mean(passyds),
+            hopassyds = mean(opassyds),
+            hrushyds = mean(rushyds),
+            horushyds = mean(orushyds),
+            hsacks = mean(sacks),
+            hosacks = mean(osacks),
+            hfumbslost = mean(fumbslost),
+            hofumbslost = mean(ofumbslost),
+            hint = mean(defints), 
+            hoint = mean(odefints)) %>%
+  mutate(home = Team) %>%
+  filter(!is.na(Team)) -> hfactorstatsOLD)
+```
+## visitor team and opponent stats for 2009-2017
+```{r}
+(psdf %>%
+  select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
+  group_by(game.id, Team) %>%
+  summarize(passyds = sum(passyds),
+            rushyds = sum(rushyds),
+            sacks = sum(sacks),
+            defints = sum(defints),
+            fumbslost = sum(fumbslost)) %>%
+  arrange(game.id) %>%
+  mutate(opassyds = case_when(row_number() %% 2 == 1 ~ passyds[2],
+                               row_number() %% 2 == 0 ~ passyds[1]),
+         orushyds = case_when(row_number() %% 2 == 1 ~ rushyds[2],
+                              row_number() %% 2 == 0 ~ rushyds[1]),
+         osacks = case_when(row_number() %% 2 == 1 ~ sacks[2],
+                            row_number() %% 2 == 0 ~ sacks[1]),
+         odefints = case_when(row_number() %% 2 == 1 ~ defints[2],
+                              row_number() %% 2 == 0 ~ defints[1]),
+         ofumbslost = case_when(row_number() %% 2 == 1 ~ fumbslost[2],
+                                row_number() %% 2 == 0 ~ fumbslost[1])) %>%
+  group_by(Team) %>%
+  summarize(vpassyds = mean(passyds),
+            vopassyds = mean(opassyds),
+            vrushyds = mean(rushyds),
+            vorushyds = mean(orushyds),
+            vsacks = mean(sacks),
+            vosacks = mean(osacks),
+            vfumbslost = mean(fumbslost),
+            vofumbslost = mean(ofumbslost),
+            vint = mean(defints), 
+            voint = mean(odefints)) %>%
+  mutate(away = Team) %>%
+  filter(!is.na(Team)) -> vfactorstatsOLD)
+```
+## home team and opponent stats for 2017-2018
+```{r}
+(psdf1718 %>%
+  select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
+  group_by(game.id, Team) %>%
+  summarize(passyds = sum(passyds),
+            rushyds = sum(rushyds),
+            sacks = sum(sacks),
+            defints = sum(defints),
+            fumbslost = sum(fumbslost)) %>%
+  arrange(game.id) %>%
+  mutate(opassyds = case_when(row_number() %% 2 == 1 ~ passyds[2],
+                               row_number() %% 2 == 0 ~ passyds[1]),
+         orushyds = case_when(row_number() %% 2 == 1 ~ rushyds[2],
+                              row_number() %% 2 == 0 ~ rushyds[1]),
+         osacks = case_when(row_number() %% 2 == 1 ~ sacks[2],
+                            row_number() %% 2 == 0 ~ sacks[1]),
+         odefints = case_when(row_number() %% 2 == 1 ~ defints[2],
+                              row_number() %% 2 == 0 ~ defints[1]),
+         ofumbslost = case_when(row_number() %% 2 == 1 ~ fumbslost[2],
+                                row_number() %% 2 == 0 ~ fumbslost[1])) %>%
+  group_by(Team) %>%
+  summarize(hpassyds = mean(passyds),
+            hopassyds = mean(opassyds),
+            hrushyds = mean(rushyds),
+            horushyds = mean(orushyds),
+            hsacks = mean(sacks),
+            hosacks = mean(osacks),
+            hfumbslost = mean(fumbslost),
+            hofumbslost = mean(ofumbslost),
+            hint = mean(defints), 
+            hoint = mean(odefints)) %>%
+  mutate(home = Team) %>%
+  filter(!is.na(Team)) -> hfactorstatsRECENT)
+```
+## visitor team and opponent stats for 2017-2018
+```{r}
+(psdf1718 %>%
+  select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
+  group_by(game.id, Team) %>%
+  summarize(passyds = sum(passyds),
+            rushyds = sum(rushyds),
+            sacks = sum(sacks),
+            defints = sum(defints),
+            fumbslost = sum(fumbslost)) %>%
+  arrange(game.id) %>%
+  mutate(opassyds = case_when(row_number() %% 2 == 1 ~ passyds[2],
+                               row_number() %% 2 == 0 ~ passyds[1]),
+         orushyds = case_when(row_number() %% 2 == 1 ~ rushyds[2],
+                              row_number() %% 2 == 0 ~ rushyds[1]),
+         osacks = case_when(row_number() %% 2 == 1 ~ sacks[2],
+                            row_number() %% 2 == 0 ~ sacks[1]),
+         odefints = case_when(row_number() %% 2 == 1 ~ defints[2],
+                              row_number() %% 2 == 0 ~ defints[1]),
+         ofumbslost = case_when(row_number() %% 2 == 1 ~ fumbslost[2],
+                                row_number() %% 2 == 0 ~ fumbslost[1])) %>%
+  group_by(Team) %>%
+  summarize(vpassyds = mean(passyds),
+            vopassyds = mean(opassyds),
+            vrushyds = mean(rushyds),
+            vorushyds = mean(orushyds),
+            vsacks = mean(sacks),
+            vosacks = mean(osacks),
+            vfumbslost = mean(fumbslost),
+            vofumbslost = mean(ofumbslost),
+            vint = mean(defints), 
+            voint = mean(odefints)) %>%
+  mutate(away = Team) %>%
+  filter(!is.na(Team)) -> vfactorstatsRECENT)
+```
+## combine data for 2018
 ```{r}
 games2018 %>%
   mutate(winner = case_when(homescore >= awayscore ~ "home",
@@ -180,8 +324,28 @@ games2018 %>%
   left_join(vfactorstats, by = "away") %>%
   select(-GameID, -date, -home, -away, -homescore, -awayscore, -Team.x, -Team.y) -> dataset
 ```
+## combine data for 2009-2017
+```{r}
+gamesdf %>%
+  mutate(winner = case_when(homescore >= awayscore ~ "home",
+                            homescore < awayscore ~ "away")) %>%
+  left_join(hfactorstatsOLD) %>%
+  left_join(vfactorstatsOLD, by = "away") %>%
+  select(-GameID, -date, -home, -away, -homescore, -awayscore, -Team.x, -Team.y) -> datasetOLD
+```
+## combine data for 2017-2018
+```{r}
+gamesdf1718 %>%
+  mutate(winner = case_when(homescore >= awayscore ~ "home",
+                            homescore < awayscore ~ "away")) %>%
+  left_join(hfactorstatsRECENT) %>%
+  left_join(vfactorstatsRECENT, by = "away") %>%
+  select(-GameID, -date, -home, -away, -homescore, -awayscore, -Team.x, -Team.y) -> datasetRECENT
+```
 
-# Create validiation dataset
+# Create validiation dataset {.tabset} 
+
+##for 2018
 
 ```{r}
 # create a list of 80% of the rows in the original dataset we can use for training
@@ -192,6 +356,25 @@ validation <- dataset[-validation_index,]
 dataset <- dataset[validation_index,]
 ```
 
+## for 2009-2017
+```{r}
+# create a list of 80% of the rows in the original dataset we can use for training
+validation_indexOLD <- createDataPartition(datasetOLD$winner, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validationOLD <- datasetOLD[-validation_indexOLD,]
+# use the remaining 80% of data to training and testing the models
+datasetOLD <- datasetOLD[validation_indexOLD,]
+```
+## for 2017-2018
+```{r}
+# create a list of 80% of the rows in the original dataset we can use for training
+validation_indexRECENT <- createDataPartition(datasetRECENT$winner, p=0.80, list=FALSE)
+# select 20% of the data for validation
+validationRECENT <- datasetRECENT[-validation_indexRECENT,]
+# use the remaining 80% of data to training and testing the models
+datasetRECENT <- datasetRECENT[validation_indexRECENT,]
+```
+
 # Test Harness
 ```{r}
 # Run algorithms using 10-fold cross validation
@@ -199,7 +382,8 @@ control <- trainControl(method="cv", number=10)
 metric <- "Accuracy"
 ```
 
-# Build 5 models
+# Build 5 models {.tabset} 
+##for 2018
 ```{r}
 # a) linear algorithms
 set.seed(7)
@@ -219,22 +403,84 @@ fit.svm <- train(winner~., data=dataset, method="svmRadial", metric=metric, trCo
 set.seed(7)
 fit.rf <- train(winner~., data=dataset, method="rf", metric=metric, trControl=control)
 ```
-
-
-# Select best model
+##for 2009-2017
+```{r}
+# a) linear algorithms
+set.seed(7)
+OLDfit.lda <- train(winner~., data=datasetOLD, method="lda", metric=metric, trControl=control)
+# b) nonlinear algorithms
+# CART
+set.seed(7)
+OLDfit.cart <- train(winner~., data=datasetOLD, method="rpart", metric=metric, trControl=control)
+# kNN
+set.seed(7)
+OLDfit.knn <- train(winner~., data=datasetOLD, method="knn", metric=metric, trControl=control)
+# c) advanced algorithms
+# SVM
+set.seed(7)
+OLDfit.svm <- train(winner~., data=datasetOLD, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+set.seed(7)
+OLDfit.rf <- train(winner~., data=datasetOLD, method="rf", metric=metric, trControl=control)
+```
+##for 2017-2018
+```{r}
+# a) linear algorithms
+set.seed(7)
+RECENTfit.lda <- train(winner~., data=datasetRECENT, method="lda", metric=metric, trControl=control)
+# b) nonlinear algorithms
+# CART
+set.seed(7)
+RECENTfit.cart <- train(winner~., data=datasetRECENT, method="rpart", metric=metric, trControl=control)
+# kNN
+set.seed(7)
+RECENTfit.knn <- train(winner~., data=datasetRECENT, method="knn", metric=metric, trControl=control)
+# c) advanced algorithms
+# SVM
+set.seed(7)
+RECENTfit.svm <- train(winner~., data=datasetRECENT, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+set.seed(7)
+RECENTfit.rf <- train(winner~., data=datasetRECENT, method="rf", metric=metric, trControl=control)
+```
+# Select best model {.tabset}
+## 2018
 ```{r}
 # summarize accuracy of models
 results <- resamples(list(lda=fit.lda, cart=fit.cart, knn=fit.knn, svm=fit.svm, rf=fit.rf))
 summary(results)
 ```
-
+## 2009-2017
+```{r}
+# summarize accuracy of models
+results <- resamples(list(lda=OLDfit.lda, cart=OLDfit.cart, knn=OLDfit.knn, svm=OLDfit.svm, rf=OLDfit.rf))
+summary(results)
+```
+## 2017-2018
+```{r}
+# summarize accuracy of models
+results <- resamples(list(lda=RECENTfit.lda, cart=RECENTfit.cart, knn=RECENTfit.knn, svm=RECENTfit.svm, rf=RECENTfit.rf))
+summary(results)
+```
 # Test predictions
+## 2018
 ```{r}
 # estimate skill of LDA on the validation dataset
 predictions <- predict(fit.rf, validation)
 confusionMatrix(predictions, as_factor(validation$winner))
 ```
-
+## 2009-2017
+```{r}
+# estimate skill of LDA on the validation dataset
+predictionsOLD <- predict(OLDfit.rf, validationOLD)
+confusionMatrix(predictionsOLD, as_factor(validationOLD$winner))
+```
+## 2017-2018
+```{r}
+# estimate skill of LDA on the validation dataset
+predictionsRECENT <- predict(RECENTfit.rf, validationRECENT)
+confusionMatrix(predictionsRECENT, as_factor(validationRECENT$winner))
+```
 # Make new predictions
 ```{r}
 tibble::tribble(
@@ -253,12 +499,13 @@ tibble::tribble(
 
 ```{r}
 currentWeek %>%
-  filter(venue == "g15")->currentWeek1
+  filter(venue == "g1")->currentWeek1
 
-predict(fit.cart, currentWeek1)
+predict(RECENTfit.lda, currentWeek1)
 ```
 
-# Plot decision tree for CART
+# Plot decision tree for CART {.tabset}
+## 2018
 ```{r}
 rpart.plot(fit.cart$finalModel)
 rpart.rules(fit.cart$finalModel)
@@ -266,9 +513,19 @@ rpart.predict(fit.cart$finalModel, currentWeek)
 ```
 
 
+## 2009-2017
+```{r}
+rpart.plot(OLDfit.cart$finalModel)
+rpart.rules(OLDfit.cart$finalModel)
+rpart.predict(OLDfit.cart$finalModel, currentWeek)
+```
 
-
-
+## 2017-2018
+```{r}
+rpart.plot(RECENTfit.cart$finalModel)
+rpart.rules(RECENTfit.cart$finalModel)
+rpart.predict(RECENTfit.cart$finalModel, currentWeek)
+```
 
 
 
