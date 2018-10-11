@@ -98,8 +98,9 @@ psdf <- bind_rows(playerstats.2009,
 games2018 <- season_games(Season = 2018)
 playerstats.2018 <- season_player_game(2018)
 ```
+# Tidy data {.tabset}
 
-## team and opponent stats
+## home team and opponent stats
 ```{r}
 (playerstats.2018 %>%
   select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
@@ -134,6 +135,7 @@ playerstats.2018 <- season_player_game(2018)
   mutate(home = Team) %>%
   filter(!is.na(Team)) -> hfactorstats)
 ```
+## visitor team and opponent stats
 ```{r}
 (playerstats.2018 %>%
   select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
@@ -169,7 +171,7 @@ playerstats.2018 <- season_player_game(2018)
   filter(!is.na(Team)) -> vfactorstats)
 ```
 
-## 2018 data only
+## combine data
 ```{r}
 games2018 %>%
   mutate(winner = case_when(homescore >= awayscore ~ "home",
@@ -229,7 +231,7 @@ summary(results)
 # Test predictions
 ```{r}
 # estimate skill of LDA on the validation dataset
-predictions <- predict(fit.cart, validation)
+predictions <- predict(fit.rf, validation)
 confusionMatrix(predictions, as_factor(validation$winner))
 ```
 
@@ -256,7 +258,7 @@ currentWeek %>%
 predict(fit.cart, currentWeek1)
 ```
 
-# Plot decision tree
+# Plot decision tree for CART
 ```{r}
 rpart.plot(fit.cart$finalModel)
 rpart.rules(fit.cart$finalModel)
