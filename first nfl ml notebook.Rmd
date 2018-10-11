@@ -25,6 +25,14 @@ if (!require(devtools)){
   library(devtools)
 }
 ```
+## rpart.plot
+```{r}
+if (!require(rpart.plot)){
+  install.packages("rpart.plot", dependencies = TRUE)
+  library(rpart.plot)
+}
+```
+
 
 ## nflScrapr
 
@@ -91,73 +99,84 @@ games2018 <- season_games(Season = 2018)
 playerstats.2018 <- season_player_game(2018)
 ```
 
-
+## team and opponent stats
 ```{r}
 (playerstats.2018 %>%
-  select(Team, passyds, rushyds, sacks, totalfumbs, defints, fumbslost) %>%
+  select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
+  group_by(game.id, Team) %>%
+  summarize(passyds = sum(passyds),
+            rushyds = sum(rushyds),
+            sacks = sum(sacks),
+            defints = sum(defints),
+            fumbslost = sum(fumbslost)) %>%
+  arrange(game.id) %>%
+  mutate(opassyds = case_when(row_number() %% 2 == 1 ~ passyds[2],
+                               row_number() %% 2 == 0 ~ passyds[1]),
+         orushyds = case_when(row_number() %% 2 == 1 ~ rushyds[2],
+                              row_number() %% 2 == 0 ~ rushyds[1]),
+         osacks = case_when(row_number() %% 2 == 1 ~ sacks[2],
+                            row_number() %% 2 == 0 ~ sacks[1]),
+         odefints = case_when(row_number() %% 2 == 1 ~ defints[2],
+                              row_number() %% 2 == 0 ~ defints[1]),
+         ofumbslost = case_when(row_number() %% 2 == 1 ~ fumbslost[2],
+                                row_number() %% 2 == 0 ~ fumbslost[1])) %>%
   group_by(Team) %>%
-  summarize(hpassyds = sum(passyds),
-            hrushyds = sum(rushyds),
-            hsacks = sum(sacks),
-            htotalfumbs = sum(fumbslost),
-            hint = sum(defints)) %>%
-  mutate(hpassFactor = (hpassyds - mean(hpassyds))/sd(hpassyds),
-         hrushydsFactor = (hrushyds-mean(hrushyds))/sd(hrushyds),
-         hsacksFactor = (hsacks-mean(hsacks))/sd(hsacks),
-         htotalfumbsFactor = (htotalfumbs-mean(htotalfumbs))/sd(htotalfumbs),
-         hintfactor = (hint-mean(hint))/sd(hint)) %>%
-   mutate(home = Team) %>%
-  filter(!is.na(Team))-> hfactorstats)
-
+  summarize(hpassyds = mean(passyds),
+            hopassyds = mean(opassyds),
+            hrushyds = mean(rushyds),
+            horushyds = mean(orushyds),
+            hsacks = mean(sacks),
+            hosacks = mean(osacks),
+            hfumbslost = mean(fumbslost),
+            hofumbslost = mean(ofumbslost),
+            hint = mean(defints), 
+            hoint = mean(odefints)) %>%
+  mutate(home = Team) %>%
+  filter(!is.na(Team)) -> hfactorstats)
+```
+```{r}
 (playerstats.2018 %>%
-  select(Team, passyds, rushyds, sacks, totalfumbs, defints, fumbslost) %>%
+  select(game.id, Team, passyds, rushyds, sacks, defints, fumbslost) %>%
+  group_by(game.id, Team) %>%
+  summarize(passyds = sum(passyds),
+            rushyds = sum(rushyds),
+            sacks = sum(sacks),
+            defints = sum(defints),
+            fumbslost = sum(fumbslost)) %>%
+  arrange(game.id) %>%
+  mutate(opassyds = case_when(row_number() %% 2 == 1 ~ passyds[2],
+                               row_number() %% 2 == 0 ~ passyds[1]),
+         orushyds = case_when(row_number() %% 2 == 1 ~ rushyds[2],
+                              row_number() %% 2 == 0 ~ rushyds[1]),
+         osacks = case_when(row_number() %% 2 == 1 ~ sacks[2],
+                            row_number() %% 2 == 0 ~ sacks[1]),
+         odefints = case_when(row_number() %% 2 == 1 ~ defints[2],
+                              row_number() %% 2 == 0 ~ defints[1]),
+         ofumbslost = case_when(row_number() %% 2 == 1 ~ fumbslost[2],
+                                row_number() %% 2 == 0 ~ fumbslost[1])) %>%
   group_by(Team) %>%
-  summarize(vpassyds = sum(passyds),
-            vrushyds = sum(rushyds),
-            vsacks = sum(sacks),
-            vtotalfumbs = sum(fumbslost),
-            vint = sum(defints)) %>%
-  mutate(vpassFactor = (vpassyds-mean(vpassyds))/sd(vpassyds),
-         vrushydsFactor = (vrushyds-mean(vrushyds))/sd(vrushyds),
-         vsacksFactor = (vsacks-mean(vsacks))/sd(vsacks),
-         vtotalfumbsFactor = (vtotalfumbs-mean(vtotalfumbs))/sd(vtotalfumbs),
-         vintfactor = (vint-mean(vint))/sd(vint)) %>%
-   mutate(away = Team) %>%
-  filter(!is.na(Team))-> vfactorstats)
+  summarize(vpassyds = mean(passyds),
+            vopassyds = mean(opassyds),
+            vrushyds = mean(rushyds),
+            vorushyds = mean(orushyds),
+            vsacks = mean(sacks),
+            vosacks = mean(osacks),
+            vfumbslost = mean(fumbslost),
+            vofumbslost = mean(ofumbslost),
+            vint = mean(defints), 
+            voint = mean(odefints)) %>%
+  mutate(away = Team) %>%
+  filter(!is.na(Team)) -> vfactorstats)
 ```
 
-## combine 2018 datasets with diff scores
+## 2018 data only
 ```{r}
 games2018 %>%
   mutate(winner = case_when(homescore >= awayscore ~ "home",
                             homescore < awayscore ~ "away")) %>%
   left_join(hfactorstats) %>%
   left_join(vfactorstats, by = "away") %>%
-  select (winner, hpassFactor, hrushydsFactor, hsacksFactor, htotalfumbsFactor, hintfactor, vpassFactor, vrushydsFactor, vsacksFactor, vtotalfumbsFactor, vintfactor) %>%
-      mutate(passdiff = hpassFactor-vpassFactor,
-           rushdiff = hrushydsFactor-vrushydsFactor,
-           sackdiff = hsacksFactor - vsacksFactor,
-           fumblediff = htotalfumbsFactor - vtotalfumbsFactor,
-           intdiff = hintfactor - vintfactor) %>% 
-  select(winner, passdiff, rushdiff, sackdiff, fumblediff, intdiff) -> dataset
-```
-## combine 2018 datasets no diff scores
-```{r}
-games2018 %>%
-  mutate(winner = case_when(homescore >= awayscore ~ "home",
-                            homescore < awayscore ~ "away")) %>%
-  left_join(hfactorstats) %>%
-  left_join(vfactorstats, by = "away") %>%
-  select (winner, hpassFactor, hrushydsFactor, hsacksFactor, htotalfumbsFactor, hintfactor, vpassFactor, vrushydsFactor, vsacksFactor, vtotalfumbsFactor, vintfactor) -> dataset
-```
-## combine all datasets no diff scores
-```{r}
-gamesdf %>%
-  mutate(winner = case_when(homescore >= awayscore ~ "home",
-                            homescore < awayscore ~ "away")) %>%
-  left_join(hfactorstats) %>%
-  left_join(vfactorstats, by = "away") %>%
-  select (winner, hpassFactor, hrushydsFactor, hsacksFactor, htotalfumbsFactor, hintfactor, vpassFactor, vrushydsFactor, vsacksFactor, vtotalfumbsFactor, vintfactor) -> dataset
+  select(-GameID, -date, -home, -away, -homescore, -awayscore, -Team.x, -Team.y) -> dataset
 ```
 
 # Create validiation dataset
@@ -172,7 +191,6 @@ dataset <- dataset[validation_index,]
 ```
 
 # Test Harness
-
 ```{r}
 # Run algorithms using 10-fold cross validation
 control <- trainControl(method="cv", number=10)
@@ -228,12 +246,7 @@ tibble::tribble(
                                home_away==0 ~ "home")) %>%
   spread(home_away, value) %>%
   left_join(hfactorstats) %>%
-  left_join(vfactorstats, by = "away") %>%
-      mutate(passdiff = hpassFactor-vpassFactor,
-           rushdiff = hrushydsFactor-vrushydsFactor,
-           sackdiff = hsacksFactor - vsacksFactor,
-           fumblediff = htotalfumbsFactor - vtotalfumbsFactor,
-           intdiff = hintfactor - vintfactor) -> currentWeek
+  left_join(vfactorstats, by = "away") -> currentWeek
 ```
 
 ```{r}
@@ -242,6 +255,15 @@ currentWeek %>%
 
 predict(fit.cart, currentWeek1)
 ```
+
+# Plot decision tree
+```{r}
+rpart.plot(fit.cart$finalModel)
+rpart.rules(fit.cart$finalModel)
+rpart.predict(fit.cart$finalModel, currentWeek)
+```
+
+
 
 
 
